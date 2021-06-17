@@ -7,8 +7,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from ..forms import PostForm
-from ..models import Group, Post
+from ..forms import CommentForm, PostForm
+from ..models import Comment, Group, Post
 
 User = get_user_model()
 
@@ -98,3 +98,54 @@ class PostCreateFormTests(TestCase):
         self.assertEqual(self.post.group, self.group)
 
         self.assertEqual(Post.objects.count(), posts_count)
+
+
+class CommentCreateFormTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.user = User.objects.create(username="Pasha", id="1")
+
+        cls.post = Post.objects.create(
+            text="Тестовый заголовок", author=cls.user, id=69
+        )
+
+        cls.comment = Comment.objects.create(
+            text="Текст", author=cls.user, id=35
+        )
+
+        cls.form = CommentForm()
+
+    def setUp(self):
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+
+    def test_create_new_comment(self):
+        """Проверка возможности комментирования
+        авторизованным пользователем постов."""
+        comment_count = Comment.objects.count()
+
+        form_data = {
+            "text": "Текст",
+            "post": self.post.id,
+        }
+
+        self.authorized_client.post(
+            reverse(
+                "add_comment", kwargs={"username": "Pasha", "post_id": 69}
+            ),
+            data=form_data,
+            follow=True,
+        )
+
+        self.post.refresh_from_db()
+
+        self.assertEqual(Comment.objects.count(), comment_count + 1)
+
+        self.assertTrue(
+            Comment.objects.filter(
+                text="Текст",
+                post=self.post.id,
+            ).exists()
+        )

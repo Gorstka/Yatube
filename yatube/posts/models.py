@@ -1,21 +1,26 @@
+from behaviors.behaviors import Slugged
 from django.contrib.auth import get_user_model
 from django.db import models
-from pytils.translit import slugify
+from django.utils.text import slugify
 
 User = get_user_model()
 
 
-class Group(models.Model):
+class Group(Slugged):
     title = models.CharField("Заголовок", max_length=200)
-    slug = models.SlugField("Адрес странцы", max_length=100, unique=True)
+    slug = models.SlugField("Адрес страницы", max_length=100, unique=True)
     description = models.TextField("Описание")
 
     def __str__(self):
         return self.title
 
+    @property
+    def slug_source(self):
+        return self.title
+
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)[:100]
+            self.slug = slugify(self.title, allow_unicode=True)
         super().save(*args, **kwargs)
 
 
@@ -48,6 +53,7 @@ class Post(models.Model):
 class Comment(models.Model):
     post = models.ForeignKey(
         Post,
+        null=True,
         on_delete=models.CASCADE,
         related_name="comments",
     )
@@ -75,8 +81,4 @@ class Follow(models.Model):
     )
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["user", "author"], name="unique_followers"
-            )
-        ]
+        unique_together = [["user", "author"]]

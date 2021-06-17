@@ -9,7 +9,7 @@
     {% include "menu.html" with index=True %}
 
     {% for post in page %}
-      {% include "post_item.html" with post=post %}
+      {% include "posts/post_item.html" with post=post %}
     {% endfor %}
 
     {% include "paginator.html" with items=page paginator=paginator %}

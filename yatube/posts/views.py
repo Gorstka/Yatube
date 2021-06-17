@@ -129,18 +129,10 @@ def post_edit(request, username, post_id):
     )
 
 
-def page_not_found(request, exception):
-    return render(request, "misc/404.html", {"path": request.path}, status=404)
-
-
-def server_error(request):
-    return render(request, "misc/500.html", status=500)
-
-
 @login_required
 def add_comment(request, username, post_id):
     author = get_object_or_404(User, username=username)
-    post = get_object_or_404(Post, id=post_id)
+    post = get_object_or_404(Post, id=post_id, author=author)
     form = CommentForm(request.POST or None)
     if form.is_valid():
         comment = form.save(commit=False)
@@ -164,7 +156,7 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    follow = Follow.objects.filter(user=request.user, author=author)
+    follow = Follow.objects.filter(user=request.user, author=author).exists()
     if request.user != author and not follow:
         Follow.objects.create(user=request.user, author=author)
     return redirect("profile", username)

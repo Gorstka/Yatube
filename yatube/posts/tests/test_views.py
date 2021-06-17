@@ -4,7 +4,7 @@ from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from ..models import Group, Post
+from ..models import Follow, Group, Post
 
 User = get_user_model()
 
@@ -14,10 +14,16 @@ class PostPagesTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.group = Group.objects.create(title="Заголовок", slug="slug")
+
         cls.another_group = Group.objects.create(
             title="Заголовок2", slug="slug2", id="3"
         )
-        cls.user = User.objects.create(username="Pasha", id="1")
+
+        cls.user = User.objects.create(
+            username="Pasha",
+            id="1",
+        )
+
         cls.post = Post.objects.create(
             text="Тестовый заголовок",
             author=cls.user,
@@ -27,6 +33,7 @@ class PostPagesTests(TestCase):
         )
 
     def setUp(self):
+        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
         cache.clear()
@@ -175,3 +182,106 @@ class PaginatorViewsTest(TestCase):
         for records in pages.keys():
             response = self.client.get(records)
             self.assertEqual(len(response.context.get("page").object_list), 2)
+
+
+class CacheTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.user = User.objects.create(
+            username="Pasha",
+            id="1",
+        )
+
+        cls.group = Group.objects.create(title="Заголовок", slug="slug")
+
+        cls.post = Post.objects.create(
+            text="Тестовый заголовок",
+            author=cls.user,
+            id=69,
+            group=cls.group,
+            image="media/posts/square.jpg",
+        )
+
+    def setUp(self):
+        self.guest_client = Client()
+        cache.clear()
+
+    def test_cache_correct_work(self):
+        response = self.guest_client.get(reverse("index"))
+        cached_response_content = response.content
+        Post.objects.create(text="Тестовый заголовок", author=self.user)
+        response = self.guest_client.get(reverse("index"))
+        self.assertEqual(cached_response_content, response.content)
+        cache.clear()
+        response = self.guest_client.get(reverse("index"))
+        self.assertNotEqual(cached_response_content, response.content)
+
+
+class FollowViewTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.group = Group.objects.create(title="Заголовок", slug="slug")
+
+        cls.user = User.objects.create(
+            username="Pasha",
+            id="1",
+        )
+
+        cls.another_user = User.objects.create(
+            username="Serega",
+            id="2",
+        )
+
+        cls.post = Post.objects.create(
+            text="Тестовый заголовок",
+            author=cls.user,
+            id=69,
+            group=cls.group,
+            image="media/posts/square.jpg",
+        )
+
+    def setUp(self):
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+        self.another_authorized_client = Client()
+        self.another_authorized_client.force_login(self.another_user)
+        cache.clear()
+
+    def test_another_user_can_follow_author(self):
+        """Авторизованный пользователь может подписываться
+        и удалять подписки на других пользователей."""
+        follow = Follow.objects.count()
+        Follow.objects.create(user=self.another_user, author=self.user)
+        self.assertEqual(Follow.objects.count(), follow + 1)
+        Follow.objects.filter(
+            user=self.another_user, author=self.user
+        ).delete()
+        self.assertEqual(Follow.objects.count(), follow)
+
+    def test_follows_shows_correct_posts(self):
+        """Новая запись пользователя появляется в ленте тех,
+        кто на него подписан"""
+        Follow.objects.create(
+            user=self.another_user,
+            author=self.user,
+        )
+        url_reverse = reverse("follow_index")
+        response = self.another_authorized_client.get(url_reverse)
+        form_field = response.context["page"].object_list[0]
+        self.assertEqual(form_field, self.post)
+
+    def test_unfollows_shows_correct_posts(self):
+        """Новая запись пользователя не появляется в ленте тех,
+        кто не подписан на него"""
+        Follow.objects.create(
+            user=self.another_user,
+            author=self.user,
+        )
+        url_reverse = reverse("follow_index")
+        response = self.authorized_client.get(url_reverse)
+        form_field = len(response.context["page"].object_list)
+        self.assertEqual(form_field, 0)

@@ -78,9 +78,3 @@ class PostsURLTests(TestCase):
             with self.subTest(url=url):
                 response = self.authorized_client.get(url)
                 self.assertTemplateUsed(response, template)
-
-    def test_page_not_found(self):
-        """Возвращение кода ошибки 404 - страница не найдена"""
-        url = "/69/"
-        response = self.authorized_client.get(url)
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
