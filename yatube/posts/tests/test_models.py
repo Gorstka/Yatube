@@ -25,7 +25,7 @@ class GroupModelTest(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.group = Group.objects.create(
-            title="Ж" * 100,
+            title= "Тест",
             description="Тестовый текст",
         )
 
@@ -46,15 +46,8 @@ class GroupModelTest(TestCase):
     def test_text_convert_to_slug(self):
         """Содержимое поля title преобразуется в slug."""
         slug = self.group.slug
-        self.assertEqual(slug, "ж" * 100)
+        self.assertEqual(slug, "test")
 
-    def test_text_slug_max_length_not_exceed(self):
-        """
-        Длинный slug обрезается и не превышает max_length поля slug в модели.
-        """
-        max_length_slug = self.group._meta.get_field("slug").max_length
-        length_slug = len(self.group.slug)
-        self.assertEqual(max_length_slug, length_slug)
 
     def test_object_name_is_title_field(self):
         """__str__  group - это строчка с содержимым group.title."""

@@ -1,14 +1,13 @@
 from behaviors.behaviors import Slugged
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.utils.text import slugify
 
 User = get_user_model()
 
 
 class Group(Slugged):
     title = models.CharField("Заголовок", max_length=200)
-    slug = models.SlugField("Адрес страницы", max_length=100, unique=True)
+    slug = models.SlugField("Адрес страницы", blank=True, unique=True)
     description = models.TextField("Описание")
 
     def __str__(self):
@@ -17,11 +16,6 @@ class Group(Slugged):
     @property
     def slug_source(self):
         return self.title
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.title, allow_unicode=True)
-        super().save(*args, **kwargs)
 
 
 class Post(models.Model):

@@ -24,3 +24,4 @@ zipp==2.2.0               # via importlib-metadata
 mixer==7.1.2
 pytils==0.3
 django-behaviors==0.5.1
+awesome-slugify==1.6.5
