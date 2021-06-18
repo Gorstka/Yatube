@@ -25,7 +25,7 @@ class GroupModelTest(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.group = Group.objects.create(
-            title= "Тест",
+            title="Тест",
             description="Тестовый текст",
         )
 
@@ -47,7 +47,6 @@ class GroupModelTest(TestCase):
         """Содержимое поля title преобразуется в slug."""
         slug = self.group.slug
         self.assertEqual(slug, "test")
-
 
     def test_object_name_is_title_field(self):
         """__str__  group - это строчка с содержимым group.title."""
