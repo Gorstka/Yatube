@@ -13,7 +13,7 @@ ____
 
 - Python 
 - Django
-- pytest
+- Pytest
 - SQLlite3
 
 ### _Автор_
